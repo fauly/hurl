@@ -22,4 +22,3 @@ A Chrome extension that finds video streams on the current tab and sends them to
 ### Notes
 
 - Detected streams appear after the page starts loading them, so open the popup after playback starts.
-- The Cast button is only available on pages that expose the browser Remote Playback API.
