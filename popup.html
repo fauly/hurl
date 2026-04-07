@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hurl</title>
+    <link rel="stylesheet" href="popup.css">
+    <script src="popup.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <span class="wordmark">Hurl</span>
+      <button id="toggle-settings" class="settings-btn" type="button">Settings</button>
+    </header>
+    <div class="message hidden" id="message"></div>
+
+    <div id="view-main">
+      <div id="video-list" aria-live="polite"></div>
+    </div>
+
+    <div id="view-settings" class="hidden">
+      <form id="settings-form">
+        <div class="setting-row">
+          <label for="hostname">AirPlay receiver</label>
+          <input id="hostname" class="text-input" type="text" placeholder="192.168.1.x or apple-tv.local">
+        </div>
+        <div class="setting-actions">
+          <button class="btn btn-outline" id="discover" type="button">Scan</button>
+          <button class="btn btn-outline" id="test-airplay" type="button">Test</button>
+        </div>
+        <div id="discovery-results" class="discovery-results"></div>
+        <div class="setting-row">
+          <label for="cast-bridge-url">Chromecast bridge URL</label>
+          <input id="cast-bridge-url" class="text-input" type="text" placeholder="http://127.0.0.1:47991">
+        </div>
+        <div class="setting-row">
+          <label for="cast-device-name">Preferred Chromecast (optional)</label>
+          <input id="cast-device-name" class="text-input" type="text" placeholder="Living Room TV">
+        </div>
+        <div class="setting-actions">
+          <button class="btn btn-outline" id="test-chromecast" type="button">Test Chromecast bridge</button>
+        </div>
+        <div class="setting-row">
+          <label>Start from</label>
+          <div class="radio-inline">
+            <label class="radio-opt">
+              <input id="play-position-current" name="play-position" type="radio" value="current"> Current position
+            </label>
+            <label class="radio-opt">
+              <input id="play-position-0" name="play-position" type="radio" value="0"> Beginning
+            </label>
+          </div>
+        </div>
+        <div class="setting-footer">
+          <button class="btn btn-primary" type="submit">Save</button>
+          <button class="btn btn-outline" id="reset" type="button">Reset</button>
+          <span id="status" class="status-text" aria-live="polite"></span>
+        </div>
+      </form>
+    </div>
+  </body>
+</html>

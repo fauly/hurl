@@ -1,0 +1,58 @@
+{
+    "name": "Hurl",
+    "description": "Find video streams on the current tab and send them to an AirPlay receiver.",
+    "version": "2.0.0",
+    "manifest_version": 3,
+    "minimum_chrome_version": "121",
+    "icons": {
+        "16": "icon.png",
+        "48": "icon.png",
+        "128": "icon.png"
+    },
+    "background": {
+        "service_worker": "background.js"
+    },
+    "action": {
+        "default_title": "Hurl",
+        "default_popup": "popup.html",
+        "default_icon": {
+            "16": "icon.png",
+            "48": "icon.png",
+            "128": "icon.png"
+        }
+    },
+    "permissions": [
+        "activeTab",
+        "contextMenus",
+        "notifications",
+        "storage",
+        "tabs",
+        "webRequest"
+    ],
+    "host_permissions": [
+        "<all_urls>"
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "all_frames": true,
+            "world": "MAIN",
+            "js": [
+                "interceptor.js"
+            ],
+            "run_at": "document_start"
+        },
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "all_frames": true,
+            "js": [
+                "chromeplay_contentscript.js"
+            ],
+            "run_at": "document_idle"
+        }
+    ]
+}

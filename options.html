@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hurl Settings</title>
+    <link rel="stylesheet" href="options.css">
+    <script src="options.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <h1>Settings</h1>
+      <form id="settings-form">
+        <section class="section">
+          <label class="section-label" for="hostname">AirPlay receiver</label>
+          <input id="hostname" class="text-input" type="text" placeholder="192.168.1.x or apple-tv.local">
+          <div class="inline-row">
+            <button class="btn-outline" id="discover" type="button">Scan for devices</button>
+            <button class="btn-outline" id="test-airplay" type="button">Test connection</button>
+          </div>
+          <div id="discovery-results" class="discovery-results"></div>
+        </section>
+
+        <section class="section">
+          <p class="section-label">Start AirPlay from</p>
+          <div class="radio-group">
+            <label class="radio-row">
+              <input id="play-position-current" name="play-position" type="radio" value="current">
+              Current position
+            </label>
+            <label class="radio-row">
+              <input id="play-position-0" name="play-position" type="radio" value="0">
+              Beginning
+            </label>
+          </div>
+        </section>
+
+        <div class="footer-row">
+          <button class="btn-primary" type="submit">Save</button>
+          <button class="btn-ghost" id="reset" type="button">Reset to defaults</button>
+          <p id="status" class="status" aria-live="polite"></p>
+        </div>
+      </form>
+    </div>
+  </body>
+</html>
