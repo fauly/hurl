@@ -6,7 +6,7 @@ A Chrome extension that spots video URLs in your current tab and lets you stream
 
 ### Chrome Web Store Description
 
-Hurl watches the page you’re on for compatible video URLs and lets you send them straight to an AirPlay receiver—like Apple TV or HomePod. It works best with direct media links (think MP4 files or HLS streams). AirPlay controls stay right in the popup for quick use while you keep browsing.
+Hurl watches the page you’re on for compatible video URLs and lets you send them straight to an AirPlay receiver - like Apple TV or HomePod. It works best with direct media links (think MP4 files or HLS streams). AirPlay controls stay right in the popup for quick use while you keep browsing.
 
 ### Requirements
 
