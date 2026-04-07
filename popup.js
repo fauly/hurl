@@ -246,6 +246,14 @@ function renderSubnetPicker(subnets) {
 }
 
 async function scanSubnet(subnet) {
+	if (!isPrivateSubnet(subnet)) {
+		discoverButton.disabled = false;
+		discoverButton.textContent = "Scan";
+		renderDiscoveryResults([]);
+		showSettingsStatus("Only private local subnets can be scanned.");
+		return;
+	}
+
 	showSettingsStatus(`Scanning ${subnet}.1–254…`);
 	const ips = Array.from({ length: 254 }, (_, i) => `${subnet}.${i + 1}`);
 	const settled = await Promise.allSettled(ips.map(probeAirPlay));
@@ -278,6 +286,10 @@ function getAllLocalSubnets() {
 }
 
 async function probeAirPlay(ip) {
+	if (!isPrivateIpv4(ip)) {
+		return null;
+	}
+
 	const controller = new AbortController();
 	const timer = setTimeout(() => controller.abort(), 1200);
 	try {
@@ -297,6 +309,37 @@ async function probeAirPlay(ip) {
 		} catch {}
 		return { ip, label: `${label} — ${ip}` };
 	} catch { clearTimeout(timer); return null; }
+}
+
+function isPrivateSubnet(subnet) {
+	if (typeof subnet !== "string") {
+		return false;
+	}
+	return isPrivateIpv4(`${subnet}.1`);
+}
+
+function isPrivateIpv4(ip) {
+	const match = String(ip).match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+	if (!match) {
+		return false;
+	}
+
+	const octets = match.slice(1).map(Number);
+	if (octets.some((value) => value < 0 || value > 255)) {
+		return false;
+	}
+
+	const [a, b] = octets;
+	if (a === 10) {
+		return true;
+	}
+	if (a === 172 && b >= 16 && b <= 31) {
+		return true;
+	}
+	if (a === 192 && b === 168) {
+		return true;
+	}
+	return false;
 }
 
 function renderDiscoveryResults(devices) {

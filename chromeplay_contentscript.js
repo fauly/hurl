@@ -10,15 +10,19 @@ function startReporting() {
 	try {
 		const stored = document.documentElement.getAttribute(INTERCEPT_ATTR);
 		if (stored) {
-			for (const url of JSON.parse(stored)) {
-				interceptedStreamUrls.add(url);
+			for (const rawUrl of JSON.parse(stored)) {
+				const url = sanitizeInterceptedUrl(rawUrl);
+				if (url) {
+					interceptedStreamUrls.add(url);
+				}
 			}
 		}
 	} catch {}
 
 	document.documentElement.addEventListener(INTERCEPT_EVENT, (event) => {
-		if (event.detail) {
-			interceptedStreamUrls.add(event.detail);
+		const url = sanitizeInterceptedUrl(event?.detail);
+		if (url) {
+			interceptedStreamUrls.add(url);
 			schedulePageMediaReport();
 		}
 	});
@@ -50,6 +54,22 @@ async function reportPageMedia() {
 			candidates: [...collectVideoCandidates(), ...buildInterceptCandidates()]
 		});
 	} catch {}
+}
+
+function sanitizeInterceptedUrl(value) {
+	if (typeof value !== "string") {
+		return null;
+	}
+
+	try {
+		const parsed = new URL(value, location.href);
+		if (!["http:", "https:"].includes(parsed.protocol)) {
+			return null;
+		}
+		return parsed.href;
+	} catch {
+		return null;
+	}
 }
 
 function buildInterceptCandidates() {
