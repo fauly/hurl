@@ -23,23 +23,13 @@
         <div class="setting-row">
           <label for="hostname">AirPlay receiver</label>
           <input id="hostname" class="text-input" type="text" placeholder="192.168.1.x or apple-tv.local">
+          <p class="field-hint">Enter your receiver's hostname or IP, or use Scan to look on your local network.</p>
         </div>
         <div class="setting-actions">
           <button class="btn btn-outline" id="discover" type="button">Scan</button>
           <button class="btn btn-outline" id="test-airplay" type="button">Test</button>
         </div>
         <div id="discovery-results" class="discovery-results"></div>
-        <div class="setting-row">
-          <label for="cast-bridge-url">Chromecast bridge URL</label>
-          <input id="cast-bridge-url" class="text-input" type="text" placeholder="http://127.0.0.1:47991">
-        </div>
-        <div class="setting-row">
-          <label for="cast-device-name">Preferred Chromecast (optional)</label>
-          <input id="cast-device-name" class="text-input" type="text" placeholder="Living Room TV">
-        </div>
-        <div class="setting-actions">
-          <button class="btn btn-outline" id="test-chromecast" type="button">Test Chromecast bridge</button>
-        </div>
         <div class="setting-row">
           <label>Start from</label>
           <div class="radio-inline">

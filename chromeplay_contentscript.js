@@ -6,24 +6,6 @@ const schedulePageMediaReport = debounce(reportPageMedia, 250);
 
 startReporting();
 
-chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
-	handleMessage(request)
-		.then((response) => sendResponse(response))
-		.catch((error) => sendResponse({ ok: false, error: error.message || "Unexpected page error." }));
-
-	return true;
-});
-
-async function handleMessage(request) {
-	switch (request?.type) {
-		case "PROMPT_REMOTE_PLAYBACK":
-			return promptRemotePlayback(request.elementId);
-
-		default:
-			return { ok: false, error: "Unknown request." };
-	}
-}
-
 function startReporting() {
 	try {
 		const stored = document.documentElement.getAttribute(INTERCEPT_ATTR);
@@ -79,7 +61,6 @@ function buildInterceptCandidates() {
 		url,
 		delivery: /\.mpd([?#]|$)/i.test(url) ? "dash" : "hls",
 		directPlayable: true,
-		remotePlaybackSupported: false,
 		position: 0,
 		duration: null,
 		contentType: /\.mpd([?#]|$)/i.test(url) ? "application/dash+xml" : "application/x-mpegURL"
@@ -100,8 +81,7 @@ function collectVideoCandidates(rootDocument = document, results = [], seenUrls 
 			title: getVideoLabel(video),
 			pageTitle: document.title,
 			position,
-			duration,
-			remotePlaybackSupported: canPromptRemotePlayback(video)
+			duration
 		};
 
 		if (sourceUrls.length === 0 && video.currentSrc && !seenUrls.has(video.currentSrc)) {
@@ -199,11 +179,6 @@ function getVideoLabel(video) {
 
 	return document.title || "Detected video";
 }
-
-function canPromptRemotePlayback(video) {
-	return Boolean(video && !video.disableRemotePlayback && typeof video.remote?.prompt === "function");
-}
-
 function isDirectMediaUrl(url) {
 	if (!url || url.startsWith("blob:") || url.startsWith("data:")) {
 		return false;
@@ -235,28 +210,6 @@ function inferDelivery(url) {
 	}
 	return "stream";
 }
-
-async function promptRemotePlayback(elementId) {
-	const video = document.querySelector(`[data-hurl-id="${CSS.escape(elementId)}"]`);
-	if (!video) {
-		return { ok: false, error: "That video is no longer on the page." };
-	}
-
-	if (!canPromptRemotePlayback(video)) {
-		return {
-			ok: false,
-			error: "This page does not expose browser remote playback for that video element."
-		};
-	}
-
-	try {
-		await video.remote.prompt();
-		return { ok: true };
-	} catch (error) {
-		return { ok: false, error: error.message || "Remote playback prompt was canceled or blocked." };
-	}
-}
-
 function debounce(fn, waitMs) {
 	let timeoutId;
 	return () => {

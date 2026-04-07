@@ -63,6 +63,13 @@ h1 {
   border-color: transparent;
 }
 
+.field-hint {
+  margin-bottom: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--sub);
+}
+
 .inline-row {
   display: flex;
   gap: 8px;

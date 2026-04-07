@@ -1,8 +1,6 @@
 const DEFAULT_SETTINGS = {
 	hostname: "apple-tv.local",
-	playPosition: "current",
-	castBridgeUrl: "http://127.0.0.1:47991",
-	castDeviceName: ""
+	playPosition: "current"
 };
 
 const AIRPLAY_AUTH_HEADER = "Basic QWlyUGxheTo=";
@@ -61,7 +59,6 @@ chrome.webRequest.onHeadersReceived.addListener(
 			url: details.url,
 			delivery: inferDelivery(details.url, contentType),
 			directPlayable: isDirectMediaCandidate(details.url, contentType),
-			remotePlaybackSupported: false,
 			position: 0,
 			duration: null,
 			contentType: contentType || ""
@@ -108,16 +105,6 @@ async function handleMessage(message, sender) {
 			return { ok: result.ok, error: result.error || "" };
 		}
 
-		case "PLAY_CHROMECAST": {
-			await playOnChromecast(message.url, Number(message.position) || 0, message.contentType || "");
-			return { ok: true };
-		}
-
-		case "TEST_CHROMECAST": {
-			const result = await testChromecastBridge();
-			return { ok: result.ok, error: result.error || "" };
-		}
-
 		default:
 			return { ok: false, error: "Unknown request." };
 	}
@@ -156,9 +143,7 @@ async function getSettings() {
 	const stored = await chrome.storage.local.get(Object.keys(DEFAULT_SETTINGS));
 	return {
 		hostname: sanitizeHostname(stored.hostname || DEFAULT_SETTINGS.hostname),
-		playPosition: stored.playPosition || DEFAULT_SETTINGS.playPosition,
-		castBridgeUrl: sanitizeBridgeUrl(stored.castBridgeUrl || DEFAULT_SETTINGS.castBridgeUrl),
-		castDeviceName: String(stored.castDeviceName || DEFAULT_SETTINGS.castDeviceName).trim()
+		playPosition: stored.playPosition || DEFAULT_SETTINGS.playPosition
 	};
 }
 
@@ -167,18 +152,6 @@ function sanitizeHostname(value) {
 		.trim()
 		.replace(/^https?:\/\//i, "")
 		.replace(/\/$/, "");
-}
-
-function sanitizeBridgeUrl(value) {
-	const fallback = DEFAULT_SETTINGS.castBridgeUrl;
-	const raw = String(value || fallback).trim();
-	const withScheme = /^https?:\/\//i.test(raw) ? raw : `http://${raw}`;
-	try {
-		const parsed = new URL(withScheme);
-		return parsed.origin;
-	} catch {
-		return fallback;
-	}
 }
 
 function findHeader(headers = [], name) {
@@ -357,59 +330,6 @@ async function testAirPlayTarget() {
 		return {
 			ok: false,
 			error: "Could not reach the configured AirPlay receiver. Check the hostname or IP and confirm the receiver is on the same network."
-		};
-	}
-}
-
-async function playOnChromecast(url, requestedPosition, contentType = "") {
-	if (!url) {
-		throw new Error("No video URL was provided.");
-	}
-
-	if (!isDirectMediaCandidate(url, contentType)) {
-		throw new Error(
-			"Hurl can only forward direct media URLs to Chromecast. DRM, blob, and protected streams cannot be remuxed by the extension."
-		);
-	}
-
-	const settings = await getSettings();
-	const startPosition = settings.playPosition === "current" ? clampPosition(requestedPosition) : 0;
-	const response = await fetch(`${settings.castBridgeUrl}/cast`, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json"
-		},
-		body: JSON.stringify({
-			url,
-			position: startPosition,
-			contentType: String(contentType || ""),
-			deviceName: settings.castDeviceName || undefined
-		})
-	});
-
-	if (!response.ok) {
-		let detail = "";
-		try {
-			detail = (await response.text()).trim();
-		} catch {
-			detail = "";
-		}
-		throw new Error(detail || `Chromecast bridge rejected the request (${response.status}).`);
-	}
-}
-
-async function testChromecastBridge() {
-	const settings = await getSettings();
-	try {
-		const response = await fetch(`${settings.castBridgeUrl}/health`, { method: "GET" });
-		if (!response.ok) {
-			return { ok: false, error: `Bridge responded with ${response.status}.` };
-		}
-		return { ok: true };
-	} catch {
-		return {
-			ok: false,
-			error: "Could not reach the Chromecast bridge. Start the local bridge app and verify the URL in settings."
 		};
 	}
 }

@@ -1,6 +1,6 @@
 {
     "name": "Hurl",
-    "description": "Find video streams on the current tab and send them to an AirPlay receiver.",
+    "description": "Detect compatible video URLs on the current tab and send them to an AirPlay receiver.",
     "version": "2.0.0",
     "manifest_version": 3,
     "minimum_chrome_version": "121",

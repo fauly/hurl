@@ -1,8 +1,6 @@
 const DEFAULT_SETTINGS = {
 	hostname: "apple-tv.local",
-	playPosition: "current",
-	castBridgeUrl: "http://127.0.0.1:47991",
-	castDeviceName: ""
+	playPosition: "current"
 };
 
 const videoList = document.getElementById("video-list");
@@ -14,12 +12,9 @@ const settingsForm = document.getElementById("settings-form");
 const hostnameInput = document.getElementById("hostname");
 const playPositionCurrent = document.getElementById("play-position-current");
 const playPositionStart = document.getElementById("play-position-0");
-const castBridgeUrlInput = document.getElementById("cast-bridge-url");
-const castDeviceNameInput = document.getElementById("cast-device-name");
 const statusText = document.getElementById("status");
 const resetButton = document.getElementById("reset");
 const testAirPlayButton = document.getElementById("test-airplay");
-const testChromecastButton = document.getElementById("test-chromecast");
 const discoverButton = document.getElementById("discover");
 
 document.addEventListener("DOMContentLoaded", init);
@@ -35,7 +30,6 @@ async function init() {
 	settingsForm.addEventListener("submit", saveSettings);
 	resetButton.addEventListener("click", resetSettings);
 	testAirPlayButton.addEventListener("click", testAirPlay);
-	testChromecastButton.addEventListener("click", testChromecastBridge);
 	discoverButton.addEventListener("click", discoverDevices);
 	initializePopup();
 }
@@ -83,6 +77,7 @@ function mergeCandidates(pageCandidates, networkCandidates) {
 function renderCandidates(tabId, candidates) {
 	videoList.innerHTML = "";
 	candidates.forEach((candidate) => {
+		const isBlobCandidate = candidate.delivery === "blob" || String(candidate.url || "").startsWith("blob:");
 		const item = document.createElement("div");
 		item.className = "source-item";
 		const tagClass = candidate.directPlayable ? "format-tag format-tag-playable" : "format-tag";
@@ -92,63 +87,33 @@ function renderCandidates(tabId, candidates) {
 				<span class="${tagClass}">${escapeHtml(candidate.delivery || "stream")}</span>
 			</div>
 			<p class="source-url" title="${escapeHtml(candidate.url)}">${escapeHtml(candidate.url)}</p>
+			${isBlobCandidate ? `<p class="source-hint">This site is using a browser-managed blob stream. Hurl cannot send it directly to AirPlay.</p>` : ""}
 			<div class="source-actions"></div>
 		`;
 
 		const actions = item.querySelector(".source-actions");
-		const airplayButton = makeButton("Send to AirPlay", candidate.directPlayable, async () => {
-			const response = await chrome.runtime.sendMessage({
-				type: "PLAY_AIRPLAY",
-				url: candidate.url,
-				position: candidate.position || 0,
-				contentType: candidate.contentType || ""
-			});
-
-			if (!response?.ok) {
-				showMessage(response?.error || "AirPlay request failed.", true);
-				return;
-			}
-
-			showMessage("AirPlay request sent.");
-		}, "primary");
-		actions.appendChild(airplayButton);
-
-		const chromecastButton = makeButton("Send to Chromecast", candidate.directPlayable, async () => {
-			const response = await chrome.runtime.sendMessage({
-				type: "PLAY_CHROMECAST",
-				url: candidate.url,
-				position: candidate.position || 0,
-				contentType: candidate.contentType || ""
-			});
-
-			if (!response?.ok) {
-				showMessage(response?.error || "Chromecast request failed.", true);
-				return;
-			}
-
-			showMessage("Chromecast request sent.");
-		}, "secondary");
-		actions.appendChild(chromecastButton);
-
-		const castButton = makeButton("Cast", Boolean(candidate.remotePlaybackSupported && candidate.elementId), async () => {
-			const response = candidate.frameId !== undefined
-				? await chrome.tabs.sendMessage(tabId, {
-					type: "PROMPT_REMOTE_PLAYBACK",
-					elementId: candidate.elementId
-				}, { frameId: candidate.frameId })
-				: await chrome.tabs.sendMessage(tabId, {
-					type: "PROMPT_REMOTE_PLAYBACK",
-					elementId: candidate.elementId
+		if (!isBlobCandidate) {
+			const airplayButton = makeButton("Send to AirPlay", candidate.directPlayable, async () => {
+				const response = await chrome.runtime.sendMessage({
+					type: "PLAY_AIRPLAY",
+					url: candidate.url,
+					position: candidate.position || 0,
+					contentType: candidate.contentType || ""
 				});
 
-			if (!response?.ok) {
-				showMessage(response?.error || "Remote playback prompt failed.", true);
-				return;
-			}
+				if (!response?.ok) {
+					showMessage(response?.error || "AirPlay request failed.", true);
+					return;
+				}
 
-			showMessage("Remote playback picker opened.");
-		}, "secondary");
-		actions.appendChild(castButton);
+				showMessage("AirPlay request sent.");
+			}, "primary");
+			actions.appendChild(airplayButton);
+		}
+
+		if (!actions.childElementCount) {
+			actions.remove();
+		}
 
 		videoList.appendChild(item);
 	});
@@ -163,7 +128,7 @@ function buildEmptyStateText(tab) {
 		return "Local file — saved pages rarely embed the real stream. Test on the live site after starting playback.";
 	}
 
-	return "No video detected. Start playback on the page, then reopen the popup.";
+	return "No compatible video URL detected. Start playback on the page, then reopen the popup.";
 }
 
 function makeButton(label, enabled, onClick, variant = "primary") {
@@ -198,9 +163,8 @@ async function loadSettings() {
 	const stored = await chrome.storage.local.get(Object.keys(DEFAULT_SETTINGS));
 	hostnameInput.value = stored.hostname || DEFAULT_SETTINGS.hostname;
 	const pos = stored.playPosition || DEFAULT_SETTINGS.playPosition;
-	castBridgeUrlInput.value = stored.castBridgeUrl || DEFAULT_SETTINGS.castBridgeUrl;
-	castDeviceNameInput.value = stored.castDeviceName || DEFAULT_SETTINGS.castDeviceName;
 	playPositionCurrent.checked = pos === "current";
+
 	playPositionStart.checked = pos !== "current";
 }
 
@@ -208,9 +172,7 @@ async function saveSettings(event) {
 	event.preventDefault();
 	await chrome.storage.local.set({
 		hostname: hostnameInput.value.trim() || DEFAULT_SETTINGS.hostname,
-		playPosition: playPositionCurrent.checked ? "current" : "0",
-		castBridgeUrl: castBridgeUrlInput.value.trim() || DEFAULT_SETTINGS.castBridgeUrl,
-		castDeviceName: castDeviceNameInput.value.trim()
+		playPosition: playPositionCurrent.checked ? "current" : "0"
 	});
 	showSettingsStatus("Saved.");
 }
@@ -224,23 +186,11 @@ async function resetSettings() {
 async function testAirPlay() {
 	await chrome.storage.local.set({
 		hostname: hostnameInput.value.trim() || DEFAULT_SETTINGS.hostname,
-		playPosition: playPositionCurrent.checked ? "current" : "0",
-		castBridgeUrl: castBridgeUrlInput.value.trim() || DEFAULT_SETTINGS.castBridgeUrl,
-		castDeviceName: castDeviceNameInput.value.trim()
+		playPosition: playPositionCurrent.checked ? "current" : "0"
 	});
 	showSettingsStatus("Testing…");
 	const response = await chrome.runtime.sendMessage({ type: "TEST_AIRPLAY" });
 	showSettingsStatus(response?.ok ? "Receiver responded." : (response?.error || "Test failed."));
-}
-
-async function testChromecastBridge() {
-	await chrome.storage.local.set({
-		castBridgeUrl: castBridgeUrlInput.value.trim() || DEFAULT_SETTINGS.castBridgeUrl,
-		castDeviceName: castDeviceNameInput.value.trim()
-	});
-	showSettingsStatus("Testing bridge…");
-	const response = await chrome.runtime.sendMessage({ type: "TEST_CHROMECAST" });
-	showSettingsStatus(response?.ok ? "Bridge responded." : (response?.error || "Bridge test failed."));
 }
 
 function showSettingsStatus(text) {

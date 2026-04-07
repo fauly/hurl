@@ -97,6 +97,20 @@ body {
   text-overflow: ellipsis;
 }
 
+.source-hint {
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--sub);
+}
+
+.field-hint {
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--sub);
+}
+
 .source-actions {
   display: flex;
   gap: 8px;
